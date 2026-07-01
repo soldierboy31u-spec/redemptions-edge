@@ -1,0 +1,21 @@
+{
+  "frameWidth": 128,
+  "frameHeight": 128,
+  "anchor": {
+    "x": 64,
+    "y": 108
+  },
+  "drawScale": 0.6,
+  "directions": [
+    "south",
+    "southwest",
+    "west",
+    "northwest",
+    "north",
+    "northeast",
+    "east",
+    "southeast"
+  ],
+  "animations": {},
+  "fallbackAnimation": "idle"
+}
