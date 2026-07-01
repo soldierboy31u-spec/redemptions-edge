@@ -16,6 +16,54 @@
     "east",
     "southeast"
   ],
-  "animations": {},
+  "animations": {
+    "idle": {
+      "file": "chris_idle.png",
+      "framesPerDirection": 4,
+      "frameDurationMs": 180,
+      "loop": true
+    },
+    "walk": {
+      "file": "chris_walk.png",
+      "framesPerDirection": 8,
+      "frameDurationMs": 90,
+      "loop": true
+    },
+    "aim": {
+      "file": "chris_aim.png",
+      "framesPerDirection": 1,
+      "frameDurationMs": 100,
+      "loop": true,
+      "fallback": "idle"
+    },
+    "shoot": {
+      "file": "chris_shoot.png",
+      "framesPerDirection": 3,
+      "frameDurationMs": 55,
+      "loop": false,
+      "fallback": "aim"
+    },
+    "dash": {
+      "file": "chris_dash.png",
+      "framesPerDirection": 4,
+      "frameDurationMs": 45,
+      "loop": true,
+      "fallback": "walk"
+    },
+    "hurt": {
+      "file": "chris_hurt.png",
+      "framesPerDirection": 1,
+      "frameDurationMs": 120,
+      "loop": false,
+      "fallback": "idle"
+    },
+    "mounted": {
+      "file": "chris_mounted.png",
+      "framesPerDirection": 1,
+      "frameDurationMs": 120,
+      "loop": true,
+      "fallback": "idle"
+    }
+  },
   "fallbackAnimation": "idle"
 }

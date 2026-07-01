@@ -18,3 +18,7 @@ his world position stable.
 
 Temporary art may omit optional sheets. The game must fall back to the existing
 programmer-art renderer if required sprite assets are missing.
+
+`chris_manifest.json` defines timing, looping, anchor position, draw scale, and
+fallback animation names. Adjust those values when art changes instead of
+changing renderer code.
