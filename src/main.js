@@ -1,3 +1,11 @@
+import { AssetLoader } from "./core/assetLoader.js";
+import { SpriteAnimator } from "./rendering/spriteAnimator.js";
+import {
+  ChrisAnimationController,
+  ChrisSpriteRenderer,
+  chrisAssetKey
+} from "./rendering/chrisSpriteRenderer.js";
+
 "use strict";
 
     // ============================================================
@@ -38,6 +46,62 @@
       down: false,
       justDown: false
     };
+
+    const USE_CHRIS_SPRITES = new URLSearchParams(window.location.search).get("chrisSprites") !== "0";
+    const CHRIS_ASSET_ROOT = "./assets/characters/chris/";
+    const chrisAssets = new AssetLoader();
+    let chrisSpriteRenderer = null;
+    const chrisSpriteStatus = {
+      flagEnabled: USE_CHRIS_SPRITES,
+      rendererReady: false,
+      fallbackReason: USE_CHRIS_SPRITES ? "loading" : "feature flag disabled"
+    };
+
+    initializeChrisSpriteRenderer();
+
+    async function initializeChrisSpriteRenderer() {
+      if (!USE_CHRIS_SPRITES) {
+        console.info("Chris sprite renderer disabled; using programmer-art fallback.");
+        return;
+      }
+
+      try {
+        const response = await fetch(`${CHRIS_ASSET_ROOT}chris_manifest.json`);
+        if (!response.ok) throw new Error(`Chris manifest returned ${response.status}.`);
+        const manifest = await response.json();
+        const imageEntries = {};
+        for (const [animationName, animation] of Object.entries(manifest.animations || {})) {
+          if (animation.file) imageEntries[chrisAssetKey(animationName)] = `${CHRIS_ASSET_ROOT}${animation.file}`;
+        }
+
+        await chrisAssets.loadImages(imageEntries);
+        const requiredAnimations = ["idle", "walk", "aim", "shoot"];
+        const missingRequired = requiredAnimations.filter((name) => !chrisAssets.getImage(chrisAssetKey(name)));
+        if (missingRequired.length > 0) {
+          chrisSpriteStatus.fallbackReason = `missing required sprite sheets: ${missingRequired.join(", ")}`;
+          console.info(`Chris sprite renderer using programmer-art fallback (${chrisSpriteStatus.fallbackReason}).`);
+          return;
+        }
+
+        const animator = new SpriteAnimator(manifest);
+        const controller = new ChrisAnimationController(animator);
+        chrisSpriteRenderer = new ChrisSpriteRenderer({ assets: chrisAssets, manifest, animator, controller });
+        chrisSpriteStatus.rendererReady = true;
+        chrisSpriteStatus.fallbackReason = "";
+        console.info("Chris sprite renderer ready.");
+      } catch (error) {
+        chrisSpriteStatus.fallbackReason = error.message;
+        console.info(`Chris sprite renderer using programmer-art fallback (${error.message}).`);
+      }
+    }
+
+    function isChrisSpriteRendererReady() {
+      return USE_CHRIS_SPRITES && !!chrisSpriteRenderer && chrisSpriteStatus.rendererReady;
+    }
+
+    function isPlayerAimingForSprites(player) {
+      return mouse.down || keys.has("Space") || player.fireCooldown > 0 || player.recoil > 0;
+    }
 
     const camera = {
       x: 0,
@@ -568,6 +632,9 @@
         }
 
         if ((mouse.down || keys.has("Space")) && this.fireCooldown <= 0) this.shoot();
+        if (isChrisSpriteRendererReady()) {
+          chrisSpriteRenderer.update(this, { isAiming: isPlayerAimingForSprites(this) }, dt * 1000);
+        }
       }
 
       requestDash() {
@@ -705,6 +772,11 @@
       }
 
       render() {
+        if (isChrisSpriteRendererReady() && chrisSpriteRenderer.render(ctx, this)) return;
+        this.renderProgrammerArt();
+      }
+
+      renderProgrammerArt() {
         const x = this.x;
         const y = this.y;
         const a = this.lastAim;
@@ -1501,6 +1573,7 @@
         missionStep: state.missionStep,
         missionAmbushSpawned: state.missionAmbushSpawned,
         missionComplete: state.missionComplete,
+        chrisSprite: { ...chrisSpriteStatus },
         objectiveTarget: missionObjectiveTarget(),
         activeShooters: enemies.filter((enemy) => !enemy.dead && enemy.aimWindup > 0 && distance(enemy, player) < 720).length,
         player: { x: player.x, y: player.y, hp: player.hp },

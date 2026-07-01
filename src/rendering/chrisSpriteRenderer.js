@@ -39,8 +39,11 @@ export class ChrisSpriteRenderer {
     this.imageSmoothingEnabled = false;
   }
 
-  render(ctx, player, context, deltaTimeMs) {
+  update(player, context, deltaTimeMs) {
     this.controller.update(player, context, deltaTimeMs);
+  }
+
+  render(ctx, player) {
     const frame = this.getRenderableFrame(this.animator.getCurrentFrame());
     if (!frame) return false;
 
