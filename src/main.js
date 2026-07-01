@@ -75,7 +75,7 @@ import {
         }
 
         await chrisAssets.loadImages(imageEntries);
-        const requiredAnimations = ["idle", "walk", "aim", "shoot"];
+        const requiredAnimations = ["idle"];
         const missingRequired = requiredAnimations.filter((name) => !chrisAssets.getImage(chrisAssetKey(name)));
         if (missingRequired.length > 0) {
           chrisSpriteStatus.fallbackReason = `missing required sprite sheets: ${missingRequired.join(", ")}`;

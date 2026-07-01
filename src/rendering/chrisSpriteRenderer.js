@@ -55,30 +55,21 @@ export class ChrisSpriteRenderer {
   }
 
   getRenderableFrame(frame) {
-    let animationName = frame.animationName;
-    const visited = new Set();
+    const animationName = frame.animationName;
+    const animation = this.manifest.animations?.[animationName];
+    const image = this.assets.getImage(chrisAssetKey(animationName));
+    if (!animation || !image) return null;
 
-    while (animationName && !visited.has(animationName)) {
-      visited.add(animationName);
-      const animation = this.manifest.animations?.[animationName];
-      const image = this.assets.getImage(chrisAssetKey(animationName));
-      if (animation && image) {
-        const frameCount = Math.max(1, animation.framesPerDirection || 1);
-        const frameIndex = Math.min(frame.frameIndex, frameCount - 1);
-        return {
-          ...frame,
-          animationName,
-          animation,
-          image,
-          frameIndex,
-          sourceX: frameIndex * this.manifest.frameWidth,
-          sourceY: frame.directionIndex * this.manifest.frameHeight
-        };
-      }
-      animationName = animation?.fallback || this.manifest.fallbackAnimation;
-    }
-
-    return null;
+    const frameCount = Math.max(1, animation.framesPerDirection || 1);
+    const frameIndex = Math.min(frame.frameIndex, frameCount - 1);
+    return {
+      ...frame,
+      animation,
+      image,
+      frameIndex,
+      sourceX: frameIndex * this.manifest.frameWidth,
+      sourceY: frame.directionIndex * this.manifest.frameHeight
+    };
   }
 }
 

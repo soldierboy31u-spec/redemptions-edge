@@ -20,7 +20,7 @@
     "idle": {
       "file": "chris_idle.png",
       "framesPerDirection": 4,
-      "frameDurationMs": 180,
+      "frameDurationMs": 250,
       "loop": true
     },
     "walk": {
