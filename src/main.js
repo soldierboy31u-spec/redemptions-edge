@@ -519,6 +519,8 @@ import {
         this.dashRequested = false;
         this.dashDirX = 1;
         this.dashDirY = 0;
+        this.moveInputX = 0;
+        this.moveInputY = 0;
         this.deadEyeMeter = 100;
         this.deadEyeActive = false;
         this.deadEyeCooldown = 0;
@@ -537,6 +539,8 @@ import {
         if (keys.has("KeyA") || keys.has("ArrowLeft")) mx -= 1;
         if (keys.has("KeyD") || keys.has("ArrowRight")) mx += 1;
         const dir = normalize(mx, my);
+        this.moveInputX = dir.x;
+        this.moveInputY = dir.y;
         const mounted = !!this.mounted;
         const accel = mounted ? 1360 : 1040;
         const maxSpeed = mounted ? 395 : 275;

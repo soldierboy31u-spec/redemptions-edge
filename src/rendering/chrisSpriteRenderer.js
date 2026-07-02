@@ -136,6 +136,13 @@ export function resolveChrisFacingVector(player, context = {}, state = "idle") {
   }
 
   if (state === "walk" || state === "mounted") {
+    if (Math.hypot(player.moveInputX || 0, player.moveInputY || 0) > 0.1) {
+      return {
+        x: player.moveInputX,
+        y: player.moveInputY
+      };
+    }
+
     return {
       x: player.vx,
       y: player.vy
