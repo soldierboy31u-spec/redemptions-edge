@@ -1,0 +1,34 @@
+{
+  "frameWidth": 128,
+  "frameHeight": 128,
+  "anchor": {
+    "x": 64,
+    "y": 108
+  },
+  "drawScale": 0.6,
+  "directions": [
+    "south",
+    "southwest",
+    "west",
+    "northwest",
+    "north",
+    "northeast",
+    "east",
+    "southeast"
+  ],
+  "animations": {
+    "idle": {
+      "file": "bandit_idle.png",
+      "framesPerDirection": 4,
+      "frameDurationMs": 250,
+      "loop": true
+    },
+    "walk": {
+      "file": "bandit_walk.png",
+      "framesPerDirection": 8,
+      "frameDurationMs": 95,
+      "loop": true
+    }
+  },
+  "fallbackAnimation": "idle"
+}

@@ -5,6 +5,10 @@ import {
   ChrisSpriteRenderer,
   chrisAssetKey
 } from "./rendering/chrisSpriteRenderer.js";
+import {
+  BanditSpriteRenderer,
+  banditAssetKey
+} from "./rendering/banditSpriteRenderer.js";
 
 "use strict";
 
@@ -57,6 +61,16 @@ import {
       fallbackReason: USE_CHRIS_SPRITES ? "loading" : "feature flag disabled"
     };
 
+    const USE_BANDIT_SPRITES = new URLSearchParams(window.location.search).get("banditSprites") !== "0";
+    const BANDIT_ASSET_ROOT = "./assets/characters/bandit/";
+    const banditAssets = new AssetLoader();
+    let banditSpriteRenderer = null;
+    const banditSpriteStatus = {
+      flagEnabled: USE_BANDIT_SPRITES,
+      rendererReady: false,
+      fallbackReason: USE_BANDIT_SPRITES ? "loading" : "feature flag disabled"
+    };
+
     const HORSE_ASSET_ROOT = "./assets/horses/";
     const HORSE_IDLE_ASSET_KEY = "horse:idle";
     const HORSE_DIRECTIONS = [
@@ -79,6 +93,7 @@ import {
     };
 
     initializeChrisSpriteRenderer();
+    initializeBanditSpriteRenderer();
     initializeHorseSprites();
 
     async function initializeChrisSpriteRenderer() {
@@ -123,6 +138,44 @@ import {
 
     function isPlayerAimingForSprites(player) {
       return mouse.down || keys.has("Space") || player.fireCooldown > 0 || player.recoil > 0;
+    }
+
+    async function initializeBanditSpriteRenderer() {
+      if (!USE_BANDIT_SPRITES) {
+        console.info("Bandit sprite renderer disabled; using programmer-art fallback.");
+        return;
+      }
+
+      try {
+        const response = await fetch(`${BANDIT_ASSET_ROOT}bandit_manifest.json`);
+        if (!response.ok) throw new Error(`Bandit manifest returned ${response.status}.`);
+        const manifest = await response.json();
+        const imageEntries = {};
+        for (const [animationName, animation] of Object.entries(manifest.animations || {})) {
+          if (animation.file) imageEntries[banditAssetKey(animationName)] = `${BANDIT_ASSET_ROOT}${animation.file}`;
+        }
+
+        await banditAssets.loadImages(imageEntries);
+        const requiredAnimations = ["idle", "walk"];
+        const missingRequired = requiredAnimations.filter((name) => !banditAssets.getImage(banditAssetKey(name)));
+        if (missingRequired.length > 0) {
+          banditSpriteStatus.fallbackReason = `missing required sprite sheets: ${missingRequired.join(", ")}`;
+          console.info(`Bandit sprite renderer using programmer-art fallback (${banditSpriteStatus.fallbackReason}).`);
+          return;
+        }
+
+        banditSpriteRenderer = new BanditSpriteRenderer({ assets: banditAssets, manifest });
+        banditSpriteStatus.rendererReady = true;
+        banditSpriteStatus.fallbackReason = "";
+        console.info("Bandit sprite renderer ready.");
+      } catch (error) {
+        banditSpriteStatus.fallbackReason = error.message;
+        console.info(`Bandit sprite renderer using programmer-art fallback (${error.message}).`);
+      }
+    }
+
+    function isBanditSpriteRendererReady() {
+      return USE_BANDIT_SPRITES && !!banditSpriteRenderer && banditSpriteStatus.rendererReady;
     }
 
     async function initializeHorseSprites() {
@@ -1073,6 +1126,9 @@ import {
         this.x = clamp(this.x, 30, WORLD_W - 30);
         this.y = clamp(this.y, 30, WORLD_H - 30);
         for (const obj of staticObjects) resolveCircleRect(this, obj);
+        if (this.type === "bandit" && !this.law && isBanditSpriteRendererReady()) {
+          banditSpriteRenderer.update(this, dt * 1000);
+        }
       }
 
       beginShotTell() {
@@ -1213,6 +1269,10 @@ import {
       render() {
         if (this.dead) return;
         this.renderTell();
+        if (this.type === "bandit" && !this.law && isBanditSpriteRendererReady() && banditSpriteRenderer.render(ctx, this)) {
+          this.renderHealthBar();
+          return;
+        }
         const a = angleTo(this, player);
         ctx.save();
         ctx.translate(this.x, this.y);
@@ -1253,6 +1313,10 @@ import {
         }
         ctx.restore();
 
+        this.renderHealthBar();
+      }
+
+      renderHealthBar() {
         const hpw = 34;
         ctx.fillStyle = "rgba(0,0,0,0.45)";
         ctx.fillRect(this.x - hpw / 2, this.y - 36, hpw, 5);
