@@ -57,7 +57,29 @@ import {
       fallbackReason: USE_CHRIS_SPRITES ? "loading" : "feature flag disabled"
     };
 
+    const HORSE_ASSET_ROOT = "./assets/horses/";
+    const HORSE_IDLE_ASSET_KEY = "horse:idle";
+    const HORSE_DIRECTIONS = [
+      "south",
+      "southwest",
+      "west",
+      "northwest",
+      "north",
+      "northeast",
+      "east",
+      "southeast"
+    ];
+    const HORSE_FRAME_SIZE = 128;
+    const HORSE_DRAW_SCALE = 0.6;
+    const HORSE_ANCHOR = { x: 64, y: 108 };
+    const horseAssets = new AssetLoader();
+    const horseSpriteStatus = {
+      rendererReady: false,
+      fallbackReason: "loading"
+    };
+
     initializeChrisSpriteRenderer();
+    initializeHorseSprites();
 
     async function initializeChrisSpriteRenderer() {
       if (!USE_CHRIS_SPRITES) {
@@ -101,6 +123,30 @@ import {
 
     function isPlayerAimingForSprites(player) {
       return mouse.down || keys.has("Space") || player.fireCooldown > 0 || player.recoil > 0;
+    }
+
+    async function initializeHorseSprites() {
+      try {
+        await horseAssets.loadImages({
+          [HORSE_IDLE_ASSET_KEY]: `${HORSE_ASSET_ROOT}horse_idle.png`
+        });
+        if (!horseAssets.getImage(HORSE_IDLE_ASSET_KEY)) {
+          horseSpriteStatus.fallbackReason = "missing horse_idle.png";
+          console.info(`Horse sprite renderer using programmer-art fallback (${horseSpriteStatus.fallbackReason}).`);
+          return;
+        }
+
+        horseSpriteStatus.rendererReady = true;
+        horseSpriteStatus.fallbackReason = "";
+        console.info("Horse sprite renderer ready.");
+      } catch (error) {
+        horseSpriteStatus.fallbackReason = error.message;
+        console.info(`Horse sprite renderer using programmer-art fallback (${error.message}).`);
+      }
+    }
+
+    function isHorseSpriteRendererReady() {
+      return horseSpriteStatus.rendererReady && !!horseAssets.getImage(HORSE_IDLE_ASSET_KEY);
     }
 
     const camera = {
@@ -355,9 +401,9 @@ import {
         townsfolk.push(new Townsfolk(2140 + i * 140 + rand(-40, 40), 2020 + rand(-230, 230)));
       }
 
-      horses.push(new Horse(2260, 2460));
-      horses.push(new Horse(2980, 1690));
-      horses.push(new Horse(camp.x - 220, camp.y - 178));
+      horses.push(new Horse(2260, 2460, "southeast"));
+      horses.push(new Horse(2980, 1690, "west"));
+      horses.push(new Horse(camp.x - 220, camp.y - 178, "south"));
     }
 
     function addTownBoundaryMarkers() {
@@ -1512,15 +1558,21 @@ import {
     }
 
     class Horse {
-      constructor(x, y) {
+      constructor(x, y, direction = "east") {
         this.x = x;
         this.y = y;
+        this.direction = direction;
         this.radius = 30;
         this.mounted = false;
       }
 
       render() {
         if (this.mounted) return;
+        if (isHorseSpriteRendererReady()) {
+          drawHorseSprite(this);
+          return;
+        }
+
         ctx.save();
         ctx.translate(this.x, this.y);
         ctx.fillStyle = "#674028";
@@ -1546,6 +1598,31 @@ import {
         ctx.stroke();
         ctx.restore();
       }
+    }
+
+    function drawHorseSprite(horse) {
+      const image = horseAssets.getImage(HORSE_IDLE_ASSET_KEY);
+      if (!image) return;
+
+      const directionIndex = Math.max(0, HORSE_DIRECTIONS.indexOf(horse.direction));
+      const drawSize = HORSE_FRAME_SIZE * HORSE_DRAW_SCALE;
+      const anchorX = HORSE_ANCHOR.x * HORSE_DRAW_SCALE;
+      const anchorY = HORSE_ANCHOR.y * HORSE_DRAW_SCALE;
+
+      ctx.save();
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(
+        image,
+        0,
+        directionIndex * HORSE_FRAME_SIZE,
+        HORSE_FRAME_SIZE,
+        HORSE_FRAME_SIZE,
+        horse.x - anchorX,
+        horse.y - anchorY,
+        drawSize,
+        drawSize
+      );
+      ctx.restore();
     }
 
     const player = new Player();
